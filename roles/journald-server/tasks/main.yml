@@ -1,0 +1,42 @@
+---
+- name: Install journald-gateway components
+  yum:
+    name: systemd-journal-gateway
+    state: present
+
+- name: Making directory /var/log/journal/remote
+  file:
+    path: /var/log/journal/remote
+    state: directory
+    owner: systemd-journal-remote
+    group: systemd-journal-remote
+
+- name: Enable and start systemd-journal-gatewayd service
+  systemd:
+    name: systemd-journal-gatewayd
+    enabled: yes
+    state: started
+
+- name: Enable systemd-journal-upload service
+  systemd:
+    name: systemd-journal-upload
+    enabled: yes
+
+- name: Enable systemd-journal-remote service
+  systemd:
+    name: systemd-journal-remote
+    enabled: yes
+
+- name: Change systemd-journal-remote https to http 
+  replace:
+    path: /usr/lib/systemd/system/systemd-journal-remote.service
+    regexp: '^(\s+)--listen-https=-3 \\$'
+    replace: '\1--listen-http=-3 \\'
+  notify: restart systemd-journal-remote.service
+
+- name: Configure URL journald-upload
+  lineinfile:
+    path: /etc/systemd/journal-upload.conf
+    regexp: '^# URL='
+    line: URL=http://localhost:19532
+  notify: restart systemd-journal-upload

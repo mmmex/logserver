@@ -1,0 +1,13 @@
+---
+# - name: daemon-reload
+#   command: systemctl daemon-reload
+
+- name: daemon-reload
+  systemd:
+    daemon_reload: yes
+
+- name: restart auditd
+  systemd:
+    service: auditd
+    state: restarted
+...

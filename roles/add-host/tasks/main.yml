@@ -1,0 +1,9 @@
+---
+- name: Add "{{ ip }} {{ hostname }}" to hosts file
+  lineinfile:
+    path: /etc/hosts
+    state: present
+    line: '{{ ip }} {{ hostname }}'
+
+- name: Set timezone to {{ timezone }}
+  command: timedatectl set-timezone {{ timezone }}

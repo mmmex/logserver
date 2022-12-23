@@ -1,0 +1,10 @@
+---
+- name: Adds a block to the config file /etc/rsyslog.conf to exclude all messages from remote nginx server
+  blockinfile:
+    path: /etc/rsyslog.conf
+    marker: "### Managed by ansible! ###"
+    insertafter: '#### RULES ####'
+    backup: yes
+    block: |
+      :msg, contains, "web nginx:" ~
+  notify: restart rsyslog

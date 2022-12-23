@@ -1,0 +1,24 @@
+---
+# https://stackoverflow.com/questions/61183536/restarting-auditd-service-gives-dependency-error
+- name: Exception error when restarting service auditd
+  lineinfile: 
+    path: /usr/lib/systemd/system/auditd.service
+    regexp: '^RefuseManualStop=yes'
+    line: RefuseManualStop=no
+  notify: daemon-reload
+
+- name: Configure auditd server
+  lineinfile:
+    path: /etc/audit/auditd.conf
+    regexp: '^##tcp_listen_port = 60'
+    line: tcp_listen_port = 60
+  notify: restart auditd
+
+# - name: Daemon-reload
+#   systemd:
+#     daemon_reload: yes
+
+# - name: Restart service auditd
+#   systemd:
+#     service: auditd
+#     state: restarted

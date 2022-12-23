@@ -1,0 +1,24 @@
+---
+- name: Install journald-gateway components
+  yum:
+    name: systemd-journal-gateway
+    state: present
+
+- name: Enable and start systemd-journal-gatewayd service
+  systemd:
+    name: systemd-journal-gatewayd
+    enabled: yes
+    state: started
+
+- name: Enable and start systemd-journal-upload service
+  systemd:
+    name: systemd-journal-upload
+    enabled: yes
+    state: started
+
+- name: Configure URL journald-upload
+  lineinfile:
+    path: /etc/systemd/journal-upload.conf
+    regexp: '^# URL='
+    line: URL=http://log:19532
+  notify: restart systemd-journal-upload

@@ -1,0 +1,27 @@
+---
+- name: Install nginx
+  yum:
+    name: nginx
+    state: present
+
+- name: Disable all logs in the local store
+  replace:
+    path: /etc/nginx/nginx.conf
+    regexp: '((access_log|error_log).*)'
+    replace: '#\1'
+    validate: '/sbin/nginx -c %s -t'
+    backup: yes
+  notify: restart nginx
+
+- name: Submit logs to systemd-journald for the main part of the homework
+  blockinfile:
+    path: /etc/nginx/nginx.conf
+    marker: "### Managed by ansible! ###"
+    insertafter: '\#access_log.?'
+    backup: yes
+    block: |
+      access_log syslog:server=unix:/dev/log,facility=local7,tag=nginx,severity=info main;
+      error_log /var/log/nginx/error.log;
+      error_log syslog:server=unix:/dev/log,facility=local6,tag=nginx_error;
+    validate: '/sbin/nginx -c %s -t'
+  notify: restart nginx

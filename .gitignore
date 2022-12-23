@@ -1,0 +1,6 @@
+.dev/
+.vscode/
+part1/
+.vagrant/
+*.log
+

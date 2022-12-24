@@ -31,7 +31,7 @@
 
 ### WEB
 
-* На `web` поднят `nginx`:
+* На `web` поднят `nginx`([роль install-nginx](roles/install-nginx/tasks/main.yml)):
 
 ```bash
 [root@web ~]# systemctl status nginx.service 
@@ -71,7 +71,7 @@ Dec 23 17:26:08 web systemd[1]: Started The nginx HTTP and reverse proxy server.
        valid_lft forever preferred_lft forever
 ```
 
-* Настроен сервис `audit`, который будет следить за изменением конфигурационных файлов `nginx`, а именно: папки `/etc/nginx`, `/etc/nginx/conf.d` и `/etc/nginx/default.d`:
+* Настроен сервис `audit`, который будет следить за изменением конфигурационных файлов `nginx`, а именно: папки `/etc/nginx`, `/etc/nginx/conf.d` и `/etc/nginx/default.d`([роль audit-client](/roles/audit-client/tasks/main.yml)):
 
 ```bash
 [root@web ~]# auditctl -l
@@ -82,7 +82,7 @@ Dec 23 17:26:08 web systemd[1]: Started The nginx HTTP and reverse proxy server.
 
 #### Проверка:
 
-1. Запишем в конец файла nginx.conf какой-нибудь текст:
+1. Запишем в конец файла `nginx.conf` какой-нибудь текст:
 
 ```bash
 [root@web ~]# echo '#test' >> /etc/nginx/nginx.conf
@@ -121,7 +121,7 @@ node=web type=SYSCALL msg=audit(1671834502.689:2227): arch=c000003e syscall=2 su
 
 
 
-* Все логи с ВМ `web` будут собираться локально и удаленно сервисом `journald` в пассивном режиме.
+* Все логи с ВМ `web` будут собираться локально и удаленно сервисом `journald` в пассивном режиме ([роль journald-client](/roles/journald-client/tasks/main.yml)).
 
 ```bash
 [root@web ~]# cat /etc/systemd/journal-upload.conf
@@ -159,7 +159,7 @@ Dec 24 01:50:40 web vagrant[25443]: This is critical
 
 
 
-* Все логи `nginx` уходят на удаленный сервер (локально храняться только критичные):
+* Все логи `nginx` уходят на удаленный сервер (локально храняться только критичные)([роль install-nginx](/roles/install-nginx/tasks/main.yml)):
 
 ```bash
 [root@web ~]# grep -E '^access_log.*|^error_log.*|ansible' /etc/nginx/nginx.conf
@@ -170,7 +170,7 @@ error_log syslog:server=unix:/dev/log,facility=local6,tag=nginx_error;
 ### Managed by ansible! ###
 ```
 
-* К сожалению, `journald` не может фильтровать сообщения на входе, он просто регистрирует все события, и далее инструментом `journalctl` мы фильтруем вывод. Обычный пользователь не имеет прав доступа к инструменту `journalctl` (как и к /var/log/messages), поэтому я буду фильтровать запись в лог-файл `/var/log/messages` добавив  правило фильтрации для всех сообщений `nginx` в `/etc/rsyslog.conf`:
+* К сожалению, `journald` не может фильтровать сообщения на входе, он просто регистрирует все события, и далее инструментом `journalctl` мы фильтруем вывод. Обычный пользователь не имеет прав доступа к инструменту `journalctl` (как и к /var/log/messages), поэтому я буду фильтровать запись в лог-файл `/var/log/messages` добавив  правило фильтрации для всех сообщений `nginx` в `/etc/rsyslog.conf`([роль rsyslog-config](/roles/rsyslog-config/tasks/main.yml)):
 
 ```bash
 [root@web ~]# grep -E 'ansible|web nginx:' /etc/rsyslog.conf
@@ -233,7 +233,7 @@ Dec 24 02:33:10 web nginx[5412]: web nginx: 127.0.0.1 - - [23/Dec/2022:23:33:10 
 
 
 
-* Логи службы `audit` также уходят на центральную систему лог сервера.
+* Логи службы `audit` также уходят на центральную систему лог сервера ([роль audit-client](/roles/audit-client/tasks/main.yml)).
 
 ```bash
 [root@web ~]# cat /etc/audisp/plugins.d/au-remote.conf
@@ -252,7 +252,7 @@ format = string
 
 ### LOG
 
-* На `log` в качестве центрального лог сервера настроен `journald` по протоколу `http`. (роль)
+* В качестве центрального лог сервера настроен `journald` по протоколу `http` ([роль journald-server](/roles/journald-server/tasks/main.yml)):
 
 ```bash
 [root@log ~]# cat /usr/lib/systemd/system/systemd-journal-remote.service
@@ -286,4 +286,47 @@ URL=http://localhost:19532
 # ServerKeyFile=/etc/ssl/private/journal-upload.pem
 # ServerCertificateFile=/etc/ssl/certs/journal-upload.pem
 # TrustedCertificateFile=/etc/ssl/ca/trusted.pem
+```
+
+* Настроен сервис `audit` для приема сообщений от клиентов ([роль audit-server](/roles/audit-server/tasks/main.yml)):
+
+```bash
+[root@log ~]# cat /etc/audit/auditd.conf
+#
+# This file controls the configuration of the audit daemon
+#
+
+local_events = yes
+write_logs = yes
+log_file = /var/log/audit/audit.log
+log_group = root
+log_format = RAW
+flush = INCREMENTAL_ASYNC
+freq = 50
+max_log_file = 8
+num_logs = 5
+priority_boost = 4
+disp_qos = lossy
+dispatcher = /sbin/audispd
+name_format = NONE
+##name = mydomain
+max_log_file_action = ROTATE
+space_left = 75
+space_left_action = SYSLOG
+verify_email = yes
+action_mail_acct = root
+admin_space_left = 50
+admin_space_left_action = SUSPEND
+disk_full_action = SUSPEND
+disk_error_action = SUSPEND
+use_libwrap = yes
+tcp_listen_port = 60
+tcp_listen_queue = 5
+tcp_max_per_addr = 1
+##tcp_client_ports = 1024-65535
+tcp_client_max_idle = 0
+enable_krb5 = no
+krb5_principal = auditd
+##krb5_key_file = /etc/audit/audit.key
+distribute_network = no
 ```

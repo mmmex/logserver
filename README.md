@@ -117,9 +117,7 @@ node=web type=CWD msg=audit(1671834502.689:2227):  cwd="/root"
 node=web type=SYSCALL msg=audit(1671834502.689:2227): arch=c000003e syscall=2 success=yes exit=3 a0=8262c0 a1=441 a2=1b6 a3=fffffff0 items=2 ppid=5696 pid=5698 auid=1000 uid=0 gid=0 euid=0 suid=0 fsuid=0 egid=0 sgid=0 fsgid=0 tty=pts0 ses=6 comm="bash" exe="/usr/bin/bash" subj=unconfined_u:unconfined_r:unconfined_t:s0-s0:c0.c1023 key="filesystem"
 ```
 
-
-
-
+---
 
 * Все логи с ВМ `web` будут собираться локально и удаленно сервисом `journald` в пассивном режиме ([роль journald-client](/roles/journald-client/tasks/main.yml)).
 
@@ -155,9 +153,7 @@ Dec 24 01:50:27 web vagrant[25441]: This is warning
 Dec 24 01:50:40 web vagrant[25443]: This is critical
 ```
 
-
-
-
+---
 
 * Все логи `nginx` уходят на удаленный сервер (локально храняться только критичные)([роль install-nginx](/roles/install-nginx/tasks/main.yml)):
 
@@ -227,11 +223,7 @@ Dec 24 02:33:10 web nginx[5412]: web nginx_error: 2022/12/23 23:33:10 [error] 54
 Dec 24 02:33:10 web nginx[5412]: web nginx: 127.0.0.1 - - [23/Dec/2022:23:33:10 +0000] "HEAD /test.php HTTP/1.1" 404 0 "-" "curl/7.29.0" "-"
 ```
 
-
-
-
-
-
+---
 
 * Логи службы `audit` также уходят на центральную систему лог сервера ([роль audit-client](/roles/audit-client/tasks/main.yml)).
 
